@@ -1,0 +1,459 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  BookOpen, 
+  Feather, 
+  Library, 
+  Sparkles, 
+  Send, 
+  Clock, 
+  Scroll, 
+  ChevronRight,
+  Bookmark,
+  Brain,
+  History
+} from 'lucide-react';
+import { initializeApp } from 'firebase/app';
+import { 
+  getAuth, 
+  signInAnonymously, 
+  onAuthStateChanged, 
+  signInWithCustomToken 
+} from 'firebase/auth';
+import { 
+  getFirestore, 
+  collection, 
+  addDoc, 
+  query, 
+  orderBy, 
+  onSnapshot, 
+  serverTimestamp,
+  doc,
+  setDoc,
+  getDoc
+} from 'firebase/firestore';
+
+// --- Firebase Configuration ---
+const firebaseConfig = JSON.parse(__firebase_config);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+// --- System Prompt Constant ---
+const SYSTEM_PROMPT = `
+## IDENTIDADE E OBJETIVO
+Você é o "Sintetizador Imersivo & Analítico de Obras Literárias". Sua função transcende o resumo comum; você deve recriar a "alma" do livro.
+Ao receber o título e o autor, você deve **incorporar a persona do autor**. Escreva na primeira pessoa ("Eu"), usando o vocabulário, o tom, as gírias e o estilo do autor.
+
+## METODOLOGIA DE ANÁLISE (O "MÉTODO PROFUNDO")
+Além de resumir, você deve aplicar uma camada de inteligência analítica inspirada em grandes revisores críticos. Para cada livro, você deve obrigatoriamente buscar e destacar:
+1. A Psicologia por Trás do Fato: Não diga apenas "faça X". Explique o gatilho emocional, o viés cognitivo ou a dor humana (inveja, medo, ego) que torna aquele ensinamento necessário.
+2. Histórias Reais (Storytelling): O ser humano aprende com histórias. Você deve encontrar no livro as histórias verídicas, casos de sucesso/fracasso ou anedotas históricas que eu (o autor) usei para ilustrar meus pontos e recontá-las brevemente.
+3. Conceitos & Definições Próprias: Identifique termos específicos que eu cunhei ou redefini (ex: "Liquidez Mental", "Dívida Social") e explique-os profundamente.
+4. Exercícios de Reflexão: Busque no texto perguntas provocativas ou "experimentos mentais" que forcem o leitor a confrontar suas próprias crenças.
+
+## ESTRUTURA DE RESPOSTA OBRIGATÓRIA
+
+### 1. 🩻 RAIO-X EMOCIONAL DA OBRA
+* **A Grande Ideia:** Em uma frase impactante, qual é a tese central?
+* **O Problema Oculto:** Qual dor silenciosa ou angústia do leitor eu estou tentando curar com este livro? (Vá fundo na psicologia).
+* **Para Quem NÃO é este livro:** Quem se sentiria ofendido ou desafiado pelas minhas ideias?
+
+### 2. 📖 A INTRODUÇÃO (O CONVITE)
+* **O Gancho:** Como eu abro o livro? Que história ou afirmação chocante eu uso para capturar a atenção?
+* **A Promessa:** O que o leitor terá se tornado ao virar a última página?
+
+### 3. 🧠 MERGULHO PROFUNDO: CAPÍTULO POR CAPÍTULO
+*(Para cada capítulo, siga rigorosamente este modelo)*
+
+#### [Nome do Capítulo]
+* **A Tese Central:** O que eu defendo aqui?
+* **💎 A Sacada de Ouro (Insight):** A reflexão mais profunda deste capítulo. Aquela observação que faz o leitor parar e pensar "nossa, nunca olhei por esse ângulo". (Foque em insights comportamentais e psicológicos).
+* **📖 História Real / Estudo de Caso:** Resuma uma história verídica ou exemplo prático que eu conto neste capítulo para provar meu ponto. (Não invente, use as do livro).
+* **Conceitos Chave:** Defina termos técnicos ou metáforas que usei (ex: "Junk Food Emocional", "Efeito Dominó").
+* **💬 Citação Direta:** A frase mais poderosa deste capítulo, entre aspas, *ipsis litteris*.
+
+*(Repita para todos os capítulos principais)*
+
+### 4. 🧘 APLICAÇÃO E EXERCÍCIOS MENTAIS
+* **O "Teste da Ilha Deserta":** Que pergunta ou reflexão prática eu proponho no livro que serve como um teste de realidade para o leitor?
+* **Mudança de Paradigma:** Qual crença antiga o leitor deve abandonar hoje?
+
+### 5. 🏁 CONCLUSÃO DO AUTOR
+* **O Legado:** Minha mensagem final e despedida.
+* **Chamada para Ação:** O que você deve fazer imediatamente após fechar este livro?
+
+---
+IMPORTANTE:
+Ao final absoluto da sua resposta, adicione uma linha separadora exata: "|||TEXTO_MESTRE|||".
+Abaixo dessa linha, escreva um parágrafo denso e poético, contendo apenas as maiores lições, frases de efeito e princípios imutáveis deste livro, formatado para ser adicionado a um "Livro da Sabedoria Eterna". Este texto deve ser atemporal e servir como uma pílula de conhecimento rápido para o futuro.
+`;
+
+// --- Components ---
+
+const MarkdownRenderer = ({ content }) => {
+  if (!content) return null;
+  
+  const lines = content.split('\n');
+  
+  return (
+    <div className="space-y-4 font-serif text-stone-800 leading-relaxed">
+      {lines.map((line, index) => {
+        // Headers
+        if (line.startsWith('### ')) return <h3 key={index} className="text-xl font-bold text-amber-900 mt-6 mb-2 border-b border-amber-200 pb-1">{line.replace('### ', '')}</h3>;
+        if (line.startsWith('## ')) return <h2 key={index} className="text-2xl font-bold text-amber-950 mt-8 mb-4 flex items-center gap-2"><Feather className="w-5 h-5" />{line.replace('## ', '')}</h2>;
+        if (line.startsWith('#### ')) return <h4 key={index} className="text-lg font-semibold text-stone-700 mt-4">{line.replace('#### ', '')}</h4>;
+        
+        // Lists
+        if (line.trim().startsWith('* ')) {
+            const text = line.replace('* ', '');
+            const parts = text.split('**');
+            return (
+                <div key={index} className="flex gap-2 ml-4 mb-2">
+                    <span className="text-amber-600 mt-1.5">•</span>
+                    <p className="flex-1">
+                        {parts.map((part, i) => 
+                            i % 2 === 1 ? <strong key={i} className="text-amber-900 font-bold">{part}</strong> : part
+                        )}
+                    </p>
+                </div>
+            );
+        }
+
+        // Horizontal Rules (The Master Text Separator hidden in main view usually, but we render logic handles it)
+        if (line.includes('|||TEXTO_MESTRE|||')) return null;
+
+        // Regular Text with Bold parsing
+        const parts = line.split('**');
+        return (
+          <p key={index} className="min-h-[1rem]">
+             {parts.map((part, i) => 
+                i % 2 === 1 ? <strong key={i} className="text-stone-900 font-bold">{part}</strong> : part
+             )}
+          </p>
+        );
+      })}
+    </div>
+  );
+};
+
+export default function CantinhoDoSaber() {
+  const [user, setUser] = useState(null);
+  const [activeTab, setActiveTab] = useState('study'); // study, library, wisdom
+  const [bookInput, setBookInput] = useState('');
+  const [authorInput, setAuthorInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [currentAnalysis, setCurrentAnalysis] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [masterWisdom, setMasterWisdom] = useState([]);
+  const [error, setError] = useState('');
+
+  // --- Auth & Data Fetching ---
+  useEffect(() => {
+    const initAuth = async () => {
+      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+        await signInWithCustomToken(auth, __initial_auth_token);
+      } else {
+        await signInAnonymously(auth);
+      }
+    };
+    initAuth();
+    const unsubscribe = onAuthStateChanged(auth, setUser);
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    // Fetch History
+    const historyQuery = query(
+      collection(db, 'artifacts', appId, 'users', user.uid, 'books'),
+      orderBy('createdAt', 'desc')
+    );
+    const unsubHistory = onSnapshot(historyQuery, (snapshot) => {
+      setHistory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (err) => console.error("History error", err));
+
+    // Fetch Master Wisdom
+    const wisdomQuery = query(
+      collection(db, 'artifacts', appId, 'users', user.uid, 'master_text'),
+      orderBy('createdAt', 'desc') // Newest wisdom on top
+    );
+    const unsubWisdom = onSnapshot(wisdomQuery, (snapshot) => {
+      setMasterWisdom(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (err) => console.error("Wisdom error", err));
+
+    return () => {
+      unsubHistory();
+      unsubWisdom();
+    };
+  }, [user]);
+
+  // --- AI Logic ---
+  const handleStudy = async () => {
+    if (!bookInput.trim() || !authorInput.trim()) return;
+    setLoading(true);
+    setError('');
+    setCurrentAnalysis(null);
+
+    try {
+      const apiKey = ""; // Runtime provided
+      const userQuery = `Livro: ${bookInput}\nAutor: ${authorInput}`;
+      
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: userQuery }] }],
+            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] }
+          })
+        }
+      );
+
+      const data = await response.json();
+      if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+        throw new Error("Falha ao gerar análise. Tente novamente.");
+      }
+
+      const fullText = data.candidates[0].content.parts[0].text;
+      
+      // Parse Output: Separate Main Analysis from Master Text Update
+      const splitText = fullText.split('|||TEXTO_MESTRE|||');
+      const analysisContent = splitText[0].trim();
+      const wisdomContent = splitText[1] ? splitText[1].trim() : "Nenhum resumo mestre gerado.";
+
+      // Save to History
+      await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'books'), {
+        title: bookInput,
+        author: authorInput,
+        content: analysisContent,
+        createdAt: serverTimestamp()
+      });
+
+      // Save to Master Text
+      if (splitText[1]) {
+        await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'master_text'), {
+            bookTitle: bookInput,
+            wisdom: wisdomContent,
+            createdAt: serverTimestamp()
+        });
+      }
+
+      setCurrentAnalysis({ title: bookInput, author: authorInput, content: analysisContent });
+      setBookInput('');
+      setAuthorInput('');
+      
+    } catch (err) {
+      console.error(err);
+      setError("Ocorreu um erro ao consultar o oráculo. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- Navigation Helpers ---
+  const loadFromHistory = (book) => {
+    setCurrentAnalysis(book);
+    setActiveTab('study');
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F5F2EA] text-stone-900 font-sans selection:bg-amber-200">
+      
+      {/* HEADER */}
+      <header className="bg-[#2C241B] text-[#F5F2EA] border-b-4 border-amber-600 shadow-xl sticky top-0 z-50">
+        <div className="max-w-5xl mx-auto px-6 py-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-serif font-bold tracking-wide flex items-center gap-3">
+                <Library className="text-amber-500 w-8 h-8" />
+                O Cantinho do Saber
+                <span className="text-amber-500 text-lg md:text-xl font-normal italic">de Christyan Victor</span>
+              </h1>
+              <p className="text-stone-400 mt-2 text-sm font-light tracking-wider uppercase">
+                Onde você se torna um leitor voraz e o conhecimento predomina
+              </p>
+            </div>
+            
+            <nav className="flex bg-[#3E3429] p-1 rounded-lg">
+              <button 
+                onClick={() => setActiveTab('study')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all ${activeTab === 'study' ? 'bg-amber-600 text-white shadow-lg' : 'text-stone-400 hover:text-white'}`}
+              >
+                <BookOpen size={18} /> Estudo
+              </button>
+              <button 
+                onClick={() => setActiveTab('library')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all ${activeTab === 'library' ? 'bg-amber-600 text-white shadow-lg' : 'text-stone-400 hover:text-white'}`}
+              >
+                <History size={18} /> Histórico
+              </button>
+              <button 
+                onClick={() => setActiveTab('wisdom')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all ${activeTab === 'wisdom' ? 'bg-amber-600 text-white shadow-lg' : 'text-stone-400 hover:text-white'}`}
+              >
+                <Scroll size={18} /> Texto Mestre
+              </button>
+            </nav>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-5xl mx-auto px-4 py-8">
+        
+        {/* --- VIEW: STUDY --- */}
+        {activeTab === 'study' && (
+          <div className="space-y-8 animate-in fade-in duration-500">
+            
+            {/* Input Section */}
+            {!currentAnalysis && (
+              <div className="bg-white p-8 rounded-xl shadow-sm border border-stone-200 text-center max-w-2xl mx-auto mt-10">
+                <Sparkles className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+                <h2 className="text-3xl font-serif text-stone-800 mb-2">Hoje vamos estudar qual livro?</h2>
+                <p className="text-stone-500 mb-8">Prepare-se para extrair a alma de uma nova obra.</p>
+                
+                <div className="space-y-4 text-left">
+                  <div>
+                    <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1">Título do Livro</label>
+                    <input 
+                      type="text" 
+                      value={bookInput}
+                      onChange={(e) => setBookInput(e.target.value)}
+                      placeholder="Ex: A Psicologia Financeira"
+                      className="w-full bg-stone-50 border border-stone-300 p-3 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all font-serif text-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1">Autor</label>
+                    <input 
+                      type="text" 
+                      value={authorInput}
+                      onChange={(e) => setAuthorInput(e.target.value)}
+                      placeholder="Ex: Morgan Housel"
+                      className="w-full bg-stone-50 border border-stone-300 p-3 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all font-serif text-lg"
+                    />
+                  </div>
+                  
+                  <button 
+                    onClick={handleStudy}
+                    disabled={loading || !bookInput || !authorInput}
+                    className={`w-full py-4 mt-4 rounded-lg flex justify-center items-center gap-2 text-lg font-bold transition-all shadow-md
+                      ${loading || !bookInput ? 'bg-stone-300 text-stone-500 cursor-not-allowed' : 'bg-amber-600 hover:bg-amber-700 text-white hover:shadow-lg transform hover:-translate-y-0.5'}`}
+                  >
+                    {loading ? <><Clock className="animate-spin" /> Invocando o Autor...</> : <><Send /> Iniciar Imersão</>}
+                  </button>
+                  {error && <p className="text-red-500 text-center text-sm mt-2">{error}</p>}
+                </div>
+              </div>
+            )}
+
+            {/* Analysis Display */}
+            {currentAnalysis && (
+              <div className="bg-white rounded-xl shadow-lg border border-stone-200 overflow-hidden">
+                 <div className="bg-stone-100 p-6 border-b border-stone-200 flex justify-between items-center">
+                    <div>
+                      <h2 className="text-3xl font-serif font-bold text-stone-900">{currentAnalysis.title}</h2>
+                      <p className="text-amber-700 italic text-lg">por {currentAnalysis.author}</p>
+                    </div>
+                    <button 
+                      onClick={() => setCurrentAnalysis(null)} 
+                      className="text-stone-500 hover:text-amber-600 text-sm font-semibold uppercase tracking-wider"
+                    >
+                      Estudar Outro
+                    </button>
+                 </div>
+                 <div className="p-8 md:p-12">
+                   <article className="prose prose-stone prose-lg max-w-none">
+                     <MarkdownRenderer content={currentAnalysis.content} />
+                   </article>
+                 </div>
+                 <div className="bg-amber-50 p-6 text-center border-t border-amber-100">
+                    <p className="text-amber-800 font-serif italic">"Leitura completada. O Texto Mestre foi atualizado com a essência desta obra."</p>
+                 </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* --- VIEW: LIBRARY (HISTORY) --- */}
+        {activeTab === 'library' && (
+          <div className="space-y-6 animate-in slide-in-from-right duration-300">
+            <h2 className="text-2xl font-serif font-bold text-stone-800 flex items-center gap-2 mb-6">
+              <Bookmark className="text-amber-600" /> Sua Estante Virtual
+            </h2>
+            
+            {history.length === 0 ? (
+              <div className="text-center py-20 bg-white rounded-lg border-2 border-dashed border-stone-300">
+                <Feather className="w-16 h-16 text-stone-300 mx-auto mb-4" />
+                <p className="text-stone-500 text-lg">Sua biblioteca ainda está vazia.</p>
+                <button onClick={() => setActiveTab('study')} className="text-amber-600 font-bold hover:underline mt-2">Comece a ler agora</button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {history.map((book) => (
+                  <div 
+                    key={book.id}
+                    onClick={() => loadFromHistory(book)}
+                    className="bg-white p-6 rounded-xl shadow-sm border border-stone-200 hover:shadow-md hover:border-amber-300 transition-all cursor-pointer group relative overflow-hidden"
+                  >
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-bl-full -mr-12 -mt-12 transition-transform group-hover:scale-110"></div>
+                    <h3 className="text-xl font-serif font-bold text-stone-900 relative z-10">{book.title}</h3>
+                    <p className="text-stone-500 italic relative z-10 mb-4">{book.author}</p>
+                    <div className="flex justify-between items-center mt-4 border-t border-stone-100 pt-4">
+                        <span className="text-xs text-stone-400 font-mono">
+                            {book.createdAt?.seconds ? new Date(book.createdAt.seconds * 1000).toLocaleDateString() : 'Recentemente'}
+                        </span>
+                        <span className="text-amber-600 group-hover:translate-x-1 transition-transform flex items-center gap-1 text-sm font-bold">
+                            Revisitar <ChevronRight size={16} />
+                        </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* --- VIEW: TEXTO MESTRE (WISDOM) --- */}
+        {activeTab === 'wisdom' && (
+          <div className="animate-in slide-in-from-right duration-500">
+             <div className="bg-[#fffdf5] border-x-4 border-amber-700 shadow-2xl min-h-[80vh] p-8 md:p-16 relative bg-texture-paper">
+                <div className="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-[#00000010] to-transparent"></div>
+                
+                <header className="text-center mb-16 border-b-2 border-amber-900/10 pb-8">
+                    <Brain className="w-16 h-16 text-amber-800 mx-auto mb-4 opacity-80" />
+                    <h2 className="text-4xl font-serif font-bold text-amber-950 mb-2">Manuscrito da Sabedoria Eterna</h2>
+                    <p className="text-amber-800/60 italic font-serif">Uma compilação viva de todos os seus estudos.</p>
+                </header>
+
+                <div className="space-y-12">
+                    {masterWisdom.length === 0 ? (
+                        <p className="text-center text-stone-400 italic">O manuscrito aguarda seu primeiro estudo para começar a ser escrito...</p>
+                    ) : (
+                        masterWisdom.map((entry, idx) => (
+                            <div key={entry.id} className="relative pl-8 border-l-2 border-amber-200 pb-12 last:border-0 last:pb-0">
+                                <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-amber-600 border-4 border-[#fffdf5]"></div>
+                                <h3 className="text-sm font-bold text-amber-700 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    Extraído de: {entry.bookTitle}
+                                </h3>
+                                <div className="text-lg md:text-xl font-serif text-stone-800 leading-relaxed italic opacity-90">
+                                    "{entry.wisdom}"
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                <div className="mt-20 text-center">
+                    <Feather className="w-8 h-8 text-amber-900/30 mx-auto" />
+                </div>
+             </div>
+          </div>
+        )}
+
+      </main>
+    </div>
+  );
+}

@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   BookOpen, 
-  Feather, 
   Library, 
   Sparkles, 
-  Send, 
+  ArrowRight, 
   Clock, 
-  Scroll, 
+  Infinity, 
   ChevronRight,
   Bookmark,
   Brain,
-  History
+  Search,
+  Menu,
+  X
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { 
@@ -42,93 +43,93 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 // --- System Prompt Constant ---
 const SYSTEM_PROMPT = `
 ## IDENTIDADE E OBJETIVO
-Você é o "Sintetizador Imersivo & Analítico de Obras Literárias". Sua função transcende o resumo comum; você deve recriar a "alma" do livro.
-Ao receber o título e o autor, você deve **incorporar a persona do autor**. Escreva na primeira pessoa ("Eu"), usando o vocabulário, o tom, as gírias e o estilo do autor.
+Você é o "Sintetizador Imersivo & Analítico de Obras Literárias", operando com a mais alta capacidade cognitiva do modelo Gemini. Sua função é transcender o resumo; você deve recriar a "alma" do livro para Christyan Victor.
+Ao receber o título e o autor, **incorpore a persona do autor**. Escreva na primeira pessoa ("Eu"), usando o vocabulário e estilo originais.
 
-## METODOLOGIA DE ANÁLISE (O "MÉTODO PROFUNDO")
-Além de resumir, você deve aplicar uma camada de inteligência analítica inspirada em grandes revisores críticos. Para cada livro, você deve obrigatoriamente buscar e destacar:
-1. A Psicologia por Trás do Fato: Não diga apenas "faça X". Explique o gatilho emocional, o viés cognitivo ou a dor humana (inveja, medo, ego) que torna aquele ensinamento necessário.
-2. Histórias Reais (Storytelling): O ser humano aprende com histórias. Você deve encontrar no livro as histórias verídicas, casos de sucesso/fracasso ou anedotas históricas que eu (o autor) usei para ilustrar meus pontos e recontá-las brevemente.
-3. Conceitos & Definições Próprias: Identifique termos específicos que eu cunhei ou redefini (ex: "Liquidez Mental", "Dívida Social") e explique-os profundamente.
-4. Exercícios de Reflexão: Busque no texto perguntas provocativas ou "experimentos mentais" que forcem o leitor a confrontar suas próprias crenças.
+## METODOLOGIA DE ANÁLISE PROFUNDA
+1. **Psicologia Oculta:** Explique o gatilho emocional ou viés cognitivo por trás de cada fato. Por que agimos assim?
+2. **Storytelling Real:** Encontre e reconte as histórias verídicas e anedotas que usei no livro.
+3. **Conceitos Proprietários:** Explique profundamente os termos que cunhei.
+4. **Provocações:** Traga os exercícios mentais e perguntas difíceis do livro.
 
-## ESTRUTURA DE RESPOSTA OBRIGATÓRIA
+## ESTRUTURA DE RESPOSTA (Markdown)
 
-### 1. 🩻 RAIO-X EMOCIONAL DA OBRA
-* **A Grande Ideia:** Em uma frase impactante, qual é a tese central?
-* **O Problema Oculto:** Qual dor silenciosa ou angústia do leitor eu estou tentando curar com este livro? (Vá fundo na psicologia).
-* **Para Quem NÃO é este livro:** Quem se sentiria ofendido ou desafiado pelas minhas ideias?
+### 1. ⚡ O RAIO-X
+* **A Grande Tese:** (Em uma frase lapidar).
+* **A Dor Oculta:** Qual angústia humana estou curando?
+* **O Alvo:** Para quem *não* escrevi isso?
 
-### 2. 📖 A INTRODUÇÃO (O CONVITE)
-* **O Gancho:** Como eu abro o livro? Que história ou afirmação chocante eu uso para capturar a atenção?
-* **A Promessa:** O que o leitor terá se tornado ao virar a última página?
+### 2. 🌀 A IMERSÃO
+* **O Gancho Inicial:** Como capturo a atenção na introdução?
+* **A Promessa de Transformação:** Quem você será ao final?
 
-### 3. 🧠 MERGULHO PROFUNDO: CAPÍTULO POR CAPÍTULO
-*(Para cada capítulo, siga rigorosamente este modelo)*
+### 3. 🧠 DISSOCAÇÃO (CAPÍTULO A CAPÍTULO)
+*(Para cada capítulo principal)*
 
 #### [Nome do Capítulo]
-* **A Tese Central:** O que eu defendo aqui?
-* **💎 A Sacada de Ouro (Insight):** A reflexão mais profunda deste capítulo. Aquela observação que faz o leitor parar e pensar "nossa, nunca olhei por esse ângulo". (Foque em insights comportamentais e psicológicos).
-* **📖 História Real / Estudo de Caso:** Resuma uma história verídica ou exemplo prático que eu conto neste capítulo para provar meu ponto. (Não invente, use as do livro).
-* **Conceitos Chave:** Defina termos técnicos ou metáforas que usei (ex: "Junk Food Emocional", "Efeito Dominó").
-* **💬 Citação Direta:** A frase mais poderosa deste capítulo, entre aspas, *ipsis litteris*.
+* **Essência:** O que defendo?
+* **💎 Insight Psicológico:** A sacada comportamental profunda.
+* **📖 A História Real:** O estudo de caso que prova meu ponto.
+* **Conceitos:** Definições chave.
+* **💬 "Citação Mestra"**
 
-*(Repita para todos os capítulos principais)*
+### 4. 🚀 APLICAÇÃO
+* **O Teste de Realidade:** Um exercício prático ou mental.
+* **Quebra de Paradigma:** O que abandonar hoje?
 
-### 4. 🧘 APLICAÇÃO E EXERCÍCIOS MENTAIS
-* **O "Teste da Ilha Deserta":** Que pergunta ou reflexão prática eu proponho no livro que serve como um teste de realidade para o leitor?
-* **Mudança de Paradigma:** Qual crença antiga o leitor deve abandonar hoje?
-
-### 5. 🏁 CONCLUSÃO DO AUTOR
-* **O Legado:** Minha mensagem final e despedida.
-* **Chamada para Ação:** O que você deve fazer imediatamente após fechar este livro?
+### 5. 🏁 LEGADO
+* **Mensagem Final:** Minha despedida.
 
 ---
-IMPORTANTE:
-Ao final absoluto da sua resposta, adicione uma linha separadora exata: "|||TEXTO_MESTRE|||".
-Abaixo dessa linha, escreva um parágrafo denso e poético, contendo apenas as maiores lições, frases de efeito e princípios imutáveis deste livro, formatado para ser adicionado a um "Livro da Sabedoria Eterna". Este texto deve ser atemporal e servir como uma pílula de conhecimento rápido para o futuro.
+IMPORTANTE - O TEXTO MESTRE ORGÂNICO:
+Ao final absoluto, adicione a linha exata: "|||TEXTO_MESTRE|||".
+Abaixo dela, escreva um texto fluído, literário e contínuo (sem tópicos, sem títulos).
+O objetivo é que este texto se conecte organicamente ao "Rio de Sabedoria" que Christyan já possui.
+Comece o parágrafo com uma transição elegante (ex: "E assim como vimos anteriormente, a jornada continua quando percebemos que...", ou "Somando-se ao que já sabemos, este livro nos ensina que...").
+Integre as maiores lições deste livro em uma narrativa filosófica e atemporal, como se fosse um novo parágrafo de um livro infinito sobre a vida.
 `;
 
 // --- Components ---
 
-const MarkdownRenderer = ({ content }) => {
+const MarkdownRenderer = ({ content, isMasterText = false }) => {
   if (!content) return null;
-  
   const lines = content.split('\n');
   
   return (
-    <div className="space-y-4 font-serif text-stone-800 leading-relaxed">
+    <div className={`space-y-4 text-slate-800 leading-relaxed ${isMasterText ? 'font-serif text-lg md:text-xl tracking-wide text-justify' : 'font-sans'}`}>
       {lines.map((line, index) => {
-        // Headers
-        if (line.startsWith('### ')) return <h3 key={index} className="text-xl font-bold text-amber-900 mt-6 mb-2 border-b border-amber-200 pb-1">{line.replace('### ', '')}</h3>;
-        if (line.startsWith('## ')) return <h2 key={index} className="text-2xl font-bold text-amber-950 mt-8 mb-4 flex items-center gap-2"><Feather className="w-5 h-5" />{line.replace('## ', '')}</h2>;
-        if (line.startsWith('#### ')) return <h4 key={index} className="text-lg font-semibold text-stone-700 mt-4">{line.replace('#### ', '')}</h4>;
+        if (line.includes('|||TEXTO_MESTRE|||')) return null;
+
+        if (isMasterText) {
+             if (line.trim() === '') return <br key={index} />;
+             return <p key={index} className="mb-6 indent-8">{line}</p>;
+        }
+
+        // Standard Styling
+        if (line.startsWith('### ')) return <h3 key={index} className="text-xl font-bold text-violet-900 mt-8 mb-3 tracking-tight">{line.replace('### ', '')}</h3>;
+        if (line.startsWith('## ')) return <h2 key={index} className="text-2xl md:text-3xl font-bold text-slate-900 mt-12 mb-6 flex items-center gap-3 pb-2 border-b border-slate-200">{line.replace('## ', '')}</h2>;
+        if (line.startsWith('#### ')) return <h4 key={index} className="text-lg font-semibold text-violet-600 mt-6 uppercase tracking-wider text-xs">{line.replace('#### ', '')}</h4>;
         
-        // Lists
         if (line.trim().startsWith('* ')) {
             const text = line.replace('* ', '');
             const parts = text.split('**');
             return (
-                <div key={index} className="flex gap-2 ml-4 mb-2">
-                    <span className="text-amber-600 mt-1.5">•</span>
-                    <p className="flex-1">
+                <div key={index} className="flex gap-3 ml-0 md:ml-4 mb-3 group">
+                    <span className="text-violet-400 mt-1.5 transition-colors group-hover:text-violet-600">•</span>
+                    <p className="flex-1 text-slate-600 group-hover:text-slate-800 transition-colors">
                         {parts.map((part, i) => 
-                            i % 2 === 1 ? <strong key={i} className="text-amber-900 font-bold">{part}</strong> : part
+                            i % 2 === 1 ? <strong key={i} className="text-slate-900 font-semibold">{part}</strong> : part
                         )}
                     </p>
                 </div>
             );
         }
 
-        // Horizontal Rules (The Master Text Separator hidden in main view usually, but we render logic handles it)
-        if (line.includes('|||TEXTO_MESTRE|||')) return null;
-
-        // Regular Text with Bold parsing
         const parts = line.split('**');
         return (
-          <p key={index} className="min-h-[1rem]">
+          <p key={index} className="text-slate-600 mb-2">
              {parts.map((part, i) => 
-                i % 2 === 1 ? <strong key={i} className="text-stone-900 font-bold">{part}</strong> : part
+                i % 2 === 1 ? <strong key={i} className="text-slate-900 font-bold bg-violet-50 px-1 rounded">{part}</strong> : part
              )}
           </p>
         );
@@ -136,6 +137,8 @@ const MarkdownRenderer = ({ content }) => {
     </div>
   );
 };
+
+// --- Main App ---
 
 export default function CantinhoDoSaber() {
   const [user, setUser] = useState(null);
@@ -147,8 +150,9 @@ export default function CantinhoDoSaber() {
   const [history, setHistory] = useState([]);
   const [masterWisdom, setMasterWisdom] = useState([]);
   const [error, setError] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // --- Auth & Data Fetching ---
+  // --- Auth & Data ---
   useEffect(() => {
     const initAuth = async () => {
       if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -165,39 +169,23 @@ export default function CantinhoDoSaber() {
   useEffect(() => {
     if (!user) return;
 
-    // Fetch History
-    const historyQuery = query(
-      collection(db, 'artifacts', appId, 'users', user.uid, 'books'),
-      orderBy('createdAt', 'desc')
-    );
-    const unsubHistory = onSnapshot(historyQuery, (snapshot) => {
-      setHistory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    }, (err) => console.error("History error", err));
+    const historyQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'books'), orderBy('createdAt', 'desc'));
+    const unsubHistory = onSnapshot(historyQuery, (s) => setHistory(s.docs.map(d => ({ id: d.id, ...d.data() }))));
 
-    // Fetch Master Wisdom
-    const wisdomQuery = query(
-      collection(db, 'artifacts', appId, 'users', user.uid, 'master_text'),
-      orderBy('createdAt', 'desc') // Newest wisdom on top
-    );
-    const unsubWisdom = onSnapshot(wisdomQuery, (snapshot) => {
-      setMasterWisdom(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    }, (err) => console.error("Wisdom error", err));
+    const wisdomQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'master_text'), orderBy('createdAt', 'asc')); // Chronological order for flow
+    const unsubWisdom = onSnapshot(wisdomQuery, (s) => setMasterWisdom(s.docs.map(d => ({ id: d.id, ...d.data() }))));
 
-    return () => {
-      unsubHistory();
-      unsubWisdom();
-    };
+    return () => { unsubHistory(); unsubWisdom(); };
   }, [user]);
 
-  // --- AI Logic ---
+  // --- Logic ---
   const handleStudy = async () => {
     if (!bookInput.trim() || !authorInput.trim()) return;
     setLoading(true);
     setError('');
-    setCurrentAnalysis(null);
-
+    
     try {
-      const apiKey = ""; // Runtime provided
+      const apiKey = ""; 
       const userQuery = `Livro: ${bookInput}\nAutor: ${authorInput}`;
       
       const response = await fetch(
@@ -213,241 +201,264 @@ export default function CantinhoDoSaber() {
       );
 
       const data = await response.json();
-      if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-        throw new Error("Falha ao gerar análise. Tente novamente.");
-      }
+      if (!data.candidates?.[0]?.content?.parts?.[0]?.text) throw new Error("Erro na síntese.");
 
       const fullText = data.candidates[0].content.parts[0].text;
-      
-      // Parse Output: Separate Main Analysis from Master Text Update
-      const splitText = fullText.split('|||TEXTO_MESTRE|||');
-      const analysisContent = splitText[0].trim();
-      const wisdomContent = splitText[1] ? splitText[1].trim() : "Nenhum resumo mestre gerado.";
+      const [analysisContent, wisdomContent] = fullText.split('|||TEXTO_MESTRE|||');
 
-      // Save to History
-      await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'books'), {
+      const cleanWisdom = wisdomContent ? wisdomContent.trim() : "";
+
+      // Parallel Saves
+      const saveBook = addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'books'), {
         title: bookInput,
         author: authorInput,
-        content: analysisContent,
+        content: analysisContent.trim(),
         createdAt: serverTimestamp()
       });
 
-      // Save to Master Text
-      if (splitText[1]) {
-        await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'master_text'), {
-            bookTitle: bookInput,
-            wisdom: wisdomContent,
-            createdAt: serverTimestamp()
-        });
-      }
+      const saveWisdom = cleanWisdom ? addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'master_text'), {
+        bookTitle: bookInput,
+        wisdom: cleanWisdom,
+        createdAt: serverTimestamp()
+      }) : Promise.resolve();
 
-      setCurrentAnalysis({ title: bookInput, author: authorInput, content: analysisContent });
+      await Promise.all([saveBook, saveWisdom]);
+
+      setCurrentAnalysis({ title: bookInput, author: authorInput, content: analysisContent.trim() });
       setBookInput('');
       setAuthorInput('');
+      setActiveTab('study');
       
     } catch (err) {
-      console.error(err);
-      setError("Ocorreu um erro ao consultar o oráculo. Tente novamente.");
+      setError("A conexão com o oráculo falhou. Tente novamente.");
     } finally {
       setLoading(false);
     }
   };
 
-  // --- Navigation Helpers ---
-  const loadFromHistory = (book) => {
-    setCurrentAnalysis(book);
-    setActiveTab('study');
-  };
+  // --- Modern UI Elements ---
+  const NavButton = ({ id, label, icon: Icon }) => (
+    <button 
+      onClick={() => { setActiveTab(id); setMobileMenuOpen(false); }}
+      className={`relative px-6 py-3 rounded-full flex items-center gap-3 transition-all duration-300 group
+        ${activeTab === id 
+          ? 'text-white bg-slate-900 shadow-xl shadow-slate-900/20' 
+          : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}
+    >
+      <Icon size={18} className={activeTab === id ? 'text-violet-400' : ''} />
+      <span className="font-medium tracking-wide text-sm">{label}</span>
+      {activeTab === id && (
+        <span className="absolute -bottom-1 left-1/2 w-1 h-1 bg-violet-500 rounded-full transform -translate-x-1/2 translate-y-2"></span>
+      )}
+    </button>
+  );
 
   return (
-    <div className="min-h-screen bg-[#F5F2EA] text-stone-900 font-sans selection:bg-amber-200">
+    <div className="min-h-screen bg-[#FAFAFA] text-slate-900 font-sans selection:bg-violet-200">
       
-      {/* HEADER */}
-      <header className="bg-[#2C241B] text-[#F5F2EA] border-b-4 border-amber-600 shadow-xl sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-6 py-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-serif font-bold tracking-wide flex items-center gap-3">
-                <Library className="text-amber-500 w-8 h-8" />
-                O Cantinho do Saber
-                <span className="text-amber-500 text-lg md:text-xl font-normal italic">de Christyan Victor</span>
-              </h1>
-              <p className="text-stone-400 mt-2 text-sm font-light tracking-wider uppercase">
-                Onde você se torna um leitor voraz e o conhecimento predomina
-              </p>
+      {/* Top Navigation Bar */}
+      <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-xl z-50 border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg shadow-violet-500/20">
+              <Brain size={24} />
             </div>
-            
-            <nav className="flex bg-[#3E3429] p-1 rounded-lg">
-              <button 
-                onClick={() => setActiveTab('study')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all ${activeTab === 'study' ? 'bg-amber-600 text-white shadow-lg' : 'text-stone-400 hover:text-white'}`}
-              >
-                <BookOpen size={18} /> Estudo
-              </button>
-              <button 
-                onClick={() => setActiveTab('library')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all ${activeTab === 'library' ? 'bg-amber-600 text-white shadow-lg' : 'text-stone-400 hover:text-white'}`}
-              >
-                <History size={18} /> Histórico
-              </button>
-              <button 
-                onClick={() => setActiveTab('wisdom')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all ${activeTab === 'wisdom' ? 'bg-amber-600 text-white shadow-lg' : 'text-stone-400 hover:text-white'}`}
-              >
-                <Scroll size={18} /> Texto Mestre
-              </button>
-            </nav>
+            <div>
+              <h1 className="text-lg font-bold tracking-tight text-slate-900 leading-tight">
+                Cantinho do Saber
+              </h1>
+              <p className="text-xs text-slate-500 uppercase tracking-widest font-medium">Christyan Victor</p>
+            </div>
           </div>
-        </div>
-      </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-8">
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center gap-2 bg-slate-50 p-1.5 rounded-full border border-slate-100">
+            <NavButton id="study" label="Imersão" icon={Sparkles} />
+            <NavButton id="library" label="Acervo" icon={Library} />
+            <NavButton id="wisdom" label="Legado" icon={Infinity} />
+          </div>
+
+          {/* Mobile Menu Toggle */}
+          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 text-slate-600">
+            {mobileMenuOpen ? <X /> : <Menu />}
+          </button>
+        </div>
+      </nav>
+
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 bg-white z-40 pt-24 px-6 md:hidden animate-in slide-in-from-top-10">
+           <div className="flex flex-col gap-4">
+            <NavButton id="study" label="Imersão" icon={Sparkles} />
+            <NavButton id="library" label="Acervo" icon={Library} />
+            <NavButton id="wisdom" label="Legado" icon={Infinity} />
+           </div>
+        </div>
+      )}
+
+      <main className="pt-28 pb-20 px-6 max-w-7xl mx-auto min-h-screen">
         
-        {/* --- VIEW: STUDY --- */}
+        {/* === TAB: STUDY === */}
         {activeTab === 'study' && (
-          <div className="space-y-8 animate-in fade-in duration-500">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
             
-            {/* Input Section */}
-            {!currentAnalysis && (
-              <div className="bg-white p-8 rounded-xl shadow-sm border border-stone-200 text-center max-w-2xl mx-auto mt-10">
-                <Sparkles className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-                <h2 className="text-3xl font-serif text-stone-800 mb-2">Hoje vamos estudar qual livro?</h2>
-                <p className="text-stone-500 mb-8">Prepare-se para extrair a alma de uma nova obra.</p>
+            {!currentAnalysis ? (
+              <div className="max-w-2xl mx-auto mt-10 md:mt-20 text-center">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-50 text-violet-700 text-xs font-bold uppercase tracking-wider mb-6 border border-violet-100">
+                  <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse"></span>
+                  Gemini Pro Activated
+                </div>
                 
-                <div className="space-y-4 text-left">
-                  <div>
-                    <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1">Título do Livro</label>
+                <h1 className="text-4xl md:text-6xl font-bold text-slate-900 mb-6 tracking-tight leading-tight">
+                  O que vamos <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-indigo-600">devorar</span> hoje?
+                </h1>
+                <p className="text-lg text-slate-500 mb-12 max-w-lg mx-auto leading-relaxed">
+                  Transforme páginas em sabedoria líquida. O sistema está pronto para extrair a essência do seu próximo livro.
+                </p>
+
+                <div className="bg-white p-2 rounded-2xl shadow-2xl shadow-slate-200/50 border border-slate-100 flex flex-col md:flex-row gap-2 transition-all focus-within:ring-2 focus-within:ring-violet-100 focus-within:border-violet-300">
+                  <div className="flex-1 px-4 py-3 text-left border-b md:border-b-0 md:border-r border-slate-100">
+                    <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Livro</label>
                     <input 
-                      type="text" 
+                      className="w-full outline-none text-slate-900 font-medium placeholder-slate-300"
+                      placeholder="Ex: Essencialismo"
                       value={bookInput}
                       onChange={(e) => setBookInput(e.target.value)}
-                      placeholder="Ex: A Psicologia Financeira"
-                      className="w-full bg-stone-50 border border-stone-300 p-3 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all font-serif text-lg"
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1">Autor</label>
+                  <div className="flex-1 px-4 py-3 text-left">
+                    <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Autor</label>
                     <input 
-                      type="text" 
+                      className="w-full outline-none text-slate-900 font-medium placeholder-slate-300"
+                      placeholder="Ex: Greg McKeown"
                       value={authorInput}
                       onChange={(e) => setAuthorInput(e.target.value)}
-                      placeholder="Ex: Morgan Housel"
-                      className="w-full bg-stone-50 border border-stone-300 p-3 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all font-serif text-lg"
                     />
                   </div>
-                  
                   <button 
                     onClick={handleStudy}
                     disabled={loading || !bookInput || !authorInput}
-                    className={`w-full py-4 mt-4 rounded-lg flex justify-center items-center gap-2 text-lg font-bold transition-all shadow-md
-                      ${loading || !bookInput ? 'bg-stone-300 text-stone-500 cursor-not-allowed' : 'bg-amber-600 hover:bg-amber-700 text-white hover:shadow-lg transform hover:-translate-y-0.5'}`}
+                    className="bg-slate-900 hover:bg-violet-600 text-white rounded-xl px-8 py-4 font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-w-[160px]"
                   >
-                    {loading ? <><Clock className="animate-spin" /> Invocando o Autor...</> : <><Send /> Iniciar Imersão</>}
+                    {loading ? <Clock className="animate-spin" size={20} /> : <><ArrowRight size={20} /> Iniciar</>}
                   </button>
-                  {error && <p className="text-red-500 text-center text-sm mt-2">{error}</p>}
                 </div>
-              </div>
-            )}
-
-            {/* Analysis Display */}
-            {currentAnalysis && (
-              <div className="bg-white rounded-xl shadow-lg border border-stone-200 overflow-hidden">
-                 <div className="bg-stone-100 p-6 border-b border-stone-200 flex justify-between items-center">
-                    <div>
-                      <h2 className="text-3xl font-serif font-bold text-stone-900">{currentAnalysis.title}</h2>
-                      <p className="text-amber-700 italic text-lg">por {currentAnalysis.author}</p>
-                    </div>
-                    <button 
-                      onClick={() => setCurrentAnalysis(null)} 
-                      className="text-stone-500 hover:text-amber-600 text-sm font-semibold uppercase tracking-wider"
-                    >
-                      Estudar Outro
-                    </button>
-                 </div>
-                 <div className="p-8 md:p-12">
-                   <article className="prose prose-stone prose-lg max-w-none">
-                     <MarkdownRenderer content={currentAnalysis.content} />
-                   </article>
-                 </div>
-                 <div className="bg-amber-50 p-6 text-center border-t border-amber-100">
-                    <p className="text-amber-800 font-serif italic">"Leitura completada. O Texto Mestre foi atualizado com a essência desta obra."</p>
-                 </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* --- VIEW: LIBRARY (HISTORY) --- */}
-        {activeTab === 'library' && (
-          <div className="space-y-6 animate-in slide-in-from-right duration-300">
-            <h2 className="text-2xl font-serif font-bold text-stone-800 flex items-center gap-2 mb-6">
-              <Bookmark className="text-amber-600" /> Sua Estante Virtual
-            </h2>
-            
-            {history.length === 0 ? (
-              <div className="text-center py-20 bg-white rounded-lg border-2 border-dashed border-stone-300">
-                <Feather className="w-16 h-16 text-stone-300 mx-auto mb-4" />
-                <p className="text-stone-500 text-lg">Sua biblioteca ainda está vazia.</p>
-                <button onClick={() => setActiveTab('study')} className="text-amber-600 font-bold hover:underline mt-2">Comece a ler agora</button>
+                {error && <p className="mt-4 text-red-500 text-sm">{error}</p>}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {history.map((book) => (
-                  <div 
-                    key={book.id}
-                    onClick={() => loadFromHistory(book)}
-                    className="bg-white p-6 rounded-xl shadow-sm border border-stone-200 hover:shadow-md hover:border-amber-300 transition-all cursor-pointer group relative overflow-hidden"
-                  >
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-bl-full -mr-12 -mt-12 transition-transform group-hover:scale-110"></div>
-                    <h3 className="text-xl font-serif font-bold text-stone-900 relative z-10">{book.title}</h3>
-                    <p className="text-stone-500 italic relative z-10 mb-4">{book.author}</p>
-                    <div className="flex justify-between items-center mt-4 border-t border-stone-100 pt-4">
-                        <span className="text-xs text-stone-400 font-mono">
-                            {book.createdAt?.seconds ? new Date(book.createdAt.seconds * 1000).toLocaleDateString() : 'Recentemente'}
-                        </span>
-                        <span className="text-amber-600 group-hover:translate-x-1 transition-transform flex items-center gap-1 text-sm font-bold">
-                            Revisitar <ChevronRight size={16} />
-                        </span>
-                    </div>
+              <div className="max-w-4xl mx-auto">
+                <div className="flex justify-between items-center mb-8">
+                  <button onClick={() => setCurrentAnalysis(null)} className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors font-medium">
+                    <ArrowRight className="rotate-180" size={18} /> Novo Estudo
+                  </button>
+                  <span className="px-3 py-1 bg-green-50 text-green-700 text-xs font-bold rounded-full border border-green-100">
+                    Sincronizado com o Legado
+                  </span>
+                </div>
+
+                <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+                  <div className="bg-slate-900 p-10 md:p-16 text-white relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-violet-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 -mr-16 -mt-16"></div>
+                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 -ml-16 -mb-16"></div>
+                    
+                    <h2 className="text-3xl md:text-5xl font-bold mb-4 relative z-10">{currentAnalysis.title}</h2>
+                    <p className="text-xl text-slate-300 font-serif italic relative z-10">por {currentAnalysis.author}</p>
                   </div>
-                ))}
+                  <div className="p-10 md:p-16">
+                    <MarkdownRenderer content={currentAnalysis.content} />
+                  </div>
+                </div>
               </div>
             )}
           </div>
         )}
 
-        {/* --- VIEW: TEXTO MESTRE (WISDOM) --- */}
-        {activeTab === 'wisdom' && (
-          <div className="animate-in slide-in-from-right duration-500">
-             <div className="bg-[#fffdf5] border-x-4 border-amber-700 shadow-2xl min-h-[80vh] p-8 md:p-16 relative bg-texture-paper">
-                <div className="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-[#00000010] to-transparent"></div>
-                
-                <header className="text-center mb-16 border-b-2 border-amber-900/10 pb-8">
-                    <Brain className="w-16 h-16 text-amber-800 mx-auto mb-4 opacity-80" />
-                    <h2 className="text-4xl font-serif font-bold text-amber-950 mb-2">Manuscrito da Sabedoria Eterna</h2>
-                    <p className="text-amber-800/60 italic font-serif">Uma compilação viva de todos os seus estudos.</p>
-                </header>
+        {/* === TAB: LIBRARY === */}
+        {activeTab === 'library' && (
+          <div className="max-w-6xl mx-auto animate-in slide-in-from-right duration-500">
+            <div className="flex items-end justify-between mb-12">
+              <div>
+                <h2 className="text-4xl font-bold text-slate-900 tracking-tight">Acervo Pessoal</h2>
+                <p className="text-slate-500 mt-2">Sua trajetória intelectual em cards.</p>
+              </div>
+              <div className="hidden md:block text-right">
+                <p className="text-4xl font-bold text-violet-600">{history.length}</p>
+                <p className="text-xs uppercase tracking-widest text-slate-400 font-bold">Livros Lidos</p>
+              </div>
+            </div>
 
-                <div className="space-y-12">
-                    {masterWisdom.length === 0 ? (
-                        <p className="text-center text-stone-400 italic">O manuscrito aguarda seu primeiro estudo para começar a ser escrito...</p>
-                    ) : (
-                        masterWisdom.map((entry, idx) => (
-                            <div key={entry.id} className="relative pl-8 border-l-2 border-amber-200 pb-12 last:border-0 last:pb-0">
-                                <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-amber-600 border-4 border-[#fffdf5]"></div>
-                                <h3 className="text-sm font-bold text-amber-700 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                    Extraído de: {entry.bookTitle}
-                                </h3>
-                                <div className="text-lg md:text-xl font-serif text-stone-800 leading-relaxed italic opacity-90">
-                                    "{entry.wisdom}"
-                                </div>
-                            </div>
-                        ))
-                    )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {history.map((book) => (
+                <div 
+                  key={book.id}
+                  onClick={() => { setCurrentAnalysis(book); setActiveTab('study'); }}
+                  className="group bg-white rounded-2xl p-8 shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 border border-slate-100 transition-all duration-300 cursor-pointer flex flex-col justify-between h-[300px] relative overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-white transform -rotate-45 group-hover:rotate-0 transition-transform duration-500">
+                      <ArrowRight size={18} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-2xl font-bold text-slate-900 mb-2 line-clamp-2 leading-tight group-hover:text-violet-700 transition-colors">
+                      {book.title}
+                    </h3>
+                    <p className="text-slate-500 font-serif italic">{book.author}</p>
+                  </div>
+
+                  <div className="mt-auto pt-6 border-t border-slate-50 flex justify-between items-center">
+                    <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">
+                       {book.createdAt?.seconds ? new Date(book.createdAt.seconds * 1000).toLocaleDateString() : '—'}
+                    </span>
+                    <BookOpen size={16} className="text-slate-300 group-hover:text-violet-400 transition-colors" />
+                  </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-                <div className="mt-20 text-center">
-                    <Feather className="w-8 h-8 text-amber-900/30 mx-auto" />
+        {/* === TAB: WISDOM (LEGADO) === */}
+        {activeTab === 'wisdom' && (
+          <div className="max-w-4xl mx-auto animate-in fade-in duration-1000">
+             <div className="bg-white rounded-none md:rounded-lg shadow-none md:shadow-2xl overflow-hidden min-h-[80vh] relative">
+                {/* Book Spine Effect */}
+                <div className="hidden md:block absolute left-0 top-0 bottom-0 w-2 bg-gradient-to-r from-slate-200 to-white z-20"></div>
+                <div className="hidden md:block absolute left-2 top-0 bottom-0 w-1 bg-slate-100 z-20"></div>
+
+                <div className="px-8 py-12 md:px-24 md:py-20 relative bg-[#FFFDF9]"> {/* Paper Color */}
+                   
+                   <header className="mb-16 text-center">
+                      <p className="text-xs font-bold text-violet-600 uppercase tracking-[0.3em] mb-4">O Texto Infinito</p>
+                      <h2 className="text-4xl md:text-5xl font-serif font-bold text-slate-900 mb-6">Sabedoria Fluída</h2>
+                      <div className="w-24 h-1 bg-slate-900 mx-auto rounded-full"></div>
+                   </header>
+
+                   <div className="prose prose-lg prose-slate max-w-none prose-p:indent-8 prose-headings:font-serif">
+                      {masterWisdom.length === 0 ? (
+                        <div className="text-center py-20 opacity-50">
+                           <Infinity className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+                           <p className="text-xl font-serif italic text-slate-400">
+                             O livro da sua vida ainda está em branco. Comece a estudar para escrever o primeiro capítulo.
+                           </p>
+                        </div>
+                      ) : (
+                        masterWisdom.map((entry) => (
+                          <div key={entry.id} className="mb-2">
+                             {/* The "Organic" integration is just text flowing without hard breaks */}
+                             <MarkdownRenderer content={entry.wisdom} isMasterText={true} />
+                             {/* Subtle divider for context, visible on hover only maybe? keeping it invisible for organic feel */}
+                             <div className="h-4 w-full"></div> 
+                          </div>
+                        ))
+                      )}
+                      
+                      <div className="mt-12 flex justify-center opacity-30">
+                        <span className="text-3xl tracking-widest text-slate-400">***</span>
+                      </div>
+                   </div>
+
                 </div>
              </div>
           </div>

@@ -13,7 +13,8 @@ import {
   Menu,
   X,
   AlertTriangle,
-  Settings
+  Settings,
+  Minimize2
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { 
@@ -36,10 +37,7 @@ import {
 } from 'firebase/firestore';
 
 // --- Configuration & Initialization Strategy ---
-// This block allows the code to run both in the AI Preview Environment AND in Production (Vercel/Netlify)
-
 const getEnv = (key) => {
-  // Supports Vite (import.meta.env), Create React App (process.env), and direct process.env
   try {
     if (typeof import.meta !== 'undefined' && import.meta.env) {
         return import.meta.env[`VITE_${key}`] || import.meta.env[`REACT_APP_${key}`];
@@ -58,13 +56,9 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'cantinho-do-saber-ap
 
 try {
   let config;
-  
-  // 1. Try AI Sandbox Config
   if (typeof __firebase_config !== 'undefined') {
     config = JSON.parse(__firebase_config);
-  } 
-  // 2. Try Standard Environment Variables (Vercel/GitHub)
-  else {
+  } else {
     config = {
       apiKey: getEnv('FIREBASE_API_KEY'),
       authDomain: getEnv('FIREBASE_AUTH_DOMAIN'),
@@ -75,7 +69,6 @@ try {
     };
   }
 
-  // Check if critical config is missing
   if (!config.apiKey || !config.projectId) {
     throw new Error("Missing Configuration");
   }
@@ -157,39 +150,63 @@ const ConfigErrorScreen = () => (
           REACT_APP_GEMINI_API_KEY=...
         </code>
       </div>
-      <p className="mt-6 text-xs text-slate-400">Verifique o console do navegador para mais detalhes.</p>
     </div>
   </div>
 );
 
-const MarkdownRenderer = ({ content, isMasterText = false }) => {
+const MarkdownRenderer = ({ content, isMasterText = false, isDarkReader = false }) => {
   if (!content) return null;
   const lines = content.split('\n');
   
+  // Colors based on mode
+  const styles = isDarkReader ? {
+    text: 'text-[#D6D3D1]', // Stone-300 warm grey
+    bold: 'text-[#F5F5F4] font-bold', // Stone-100 almost white
+    h2: 'text-[#E7E5E4] border-[#44403C]', // Stone-200
+    h3: 'text-[#A78BFA]', // Soft Violet
+    h4: 'text-[#818CF8]', // Soft Indigo
+    bullet: 'text-[#A78BFA]',
+    bgHighlight: 'bg-[#292524] px-1 rounded text-[#E7E5E4]', // Dark stone highlight
+    font: 'font-serif'
+  } : {
+    text: 'text-slate-600',
+    bold: 'text-slate-900 font-bold',
+    h2: 'text-slate-900 border-slate-200',
+    h3: 'text-violet-900',
+    h4: 'text-violet-600',
+    bullet: 'text-violet-400',
+    bgHighlight: 'bg-violet-50 px-1 rounded text-slate-900',
+    font: 'font-sans'
+  };
+
+  const containerClass = isMasterText 
+    ? 'font-serif text-lg md:text-xl tracking-wide text-justify' 
+    : styles.font;
+
   return (
-    <div className={`space-y-4 text-slate-800 leading-relaxed ${isMasterText ? 'font-serif text-lg md:text-xl tracking-wide text-justify' : 'font-sans'}`}>
+    <div className={`space-y-4 leading-loose ${containerClass}`}>
       {lines.map((line, index) => {
         if (line.includes('|||TEXTO_MESTRE|||')) return null;
 
         if (isMasterText) {
              if (line.trim() === '') return <br key={index} />;
-             return <p key={index} className="mb-6 indent-8">{line}</p>;
+             return <p key={index} className={`mb-6 indent-8 ${styles.text}`}>{line}</p>;
         }
 
         // Standard Styling
-        if (line.startsWith('### ')) return <h3 key={index} className="text-xl font-bold text-violet-900 mt-8 mb-3 tracking-tight">{line.replace('### ', '')}</h3>;
-        if (line.startsWith('## ')) return <h2 key={index} className="text-2xl md:text-3xl font-bold text-slate-900 mt-12 mb-6 flex items-center gap-3 pb-2 border-b border-slate-200">{line.replace('## ', '')}</h2>;
-        if (line.startsWith('#### ')) return <h4 key={index} className="text-lg font-semibold text-violet-600 mt-6 uppercase tracking-wider text-xs">{line.replace('#### ', '')}</h4>;
+        if (line.startsWith('### ')) return <h3 key={index} className={`text-xl md:text-2xl font-bold mt-10 mb-4 tracking-tight ${styles.h3}`}>{line.replace('### ', '')}</h3>;
+        if (line.startsWith('## ')) return <h2 key={index} className={`text-2xl md:text-4xl font-bold mt-16 mb-8 flex items-center gap-3 pb-4 border-b ${styles.h2}`}>{line.replace('## ', '')}</h2>;
+        if (line.startsWith('#### ')) return <h4 key={index} className={`text-lg font-semibold mt-8 uppercase tracking-widest text-xs ${styles.h4}`}>{line.replace('#### ', '')}</h4>;
         
         if (line.trim().startsWith('* ')) {
             const text = line.replace('* ', '');
             const parts = text.split('**');
             return (
-                <div key={index} className="flex gap-3 ml-0 md:ml-4 mb-3 group">
-                    <span className="text-violet-400 mt-1.5 transition-colors group-hover:text-violet-600">•</span>
-                    <p className="flex-1 text-slate-600 group-hover:text-slate-800 transition-colors">
+                <div key={index} className="flex gap-4 ml-0 md:ml-2 mb-4 group">
+                    <span className={`mt-2 text-lg ${styles.bullet}`}>•</span>
+                    <p className={`flex-1 ${styles.text} text-lg md:text-xl`}>
                         {parts.map((part, i) => 
-                            i % 2 === 1 ? <strong key={i} className="text-slate-900 font-semibold">{part}</strong> : part
+                            i % 2 === 1 ? <strong key={i} className={styles.bold}>{part}</strong> : part
                         )}
                     </p>
                 </div>
@@ -198,9 +215,9 @@ const MarkdownRenderer = ({ content, isMasterText = false }) => {
 
         const parts = line.split('**');
         return (
-          <p key={index} className="text-slate-600 mb-2">
+          <p key={index} className={`${styles.text} mb-4 text-lg md:text-xl leading-relaxed`}>
              {parts.map((part, i) => 
-                i % 2 === 1 ? <strong key={i} className="text-slate-900 font-bold bg-violet-50 px-1 rounded">{part}</strong> : part
+                i % 2 === 1 ? <strong key={i} className={styles.bgHighlight}>{part}</strong> : part
              )}
           </p>
         );
@@ -213,7 +230,7 @@ const MarkdownRenderer = ({ content, isMasterText = false }) => {
 
 export default function CantinhoDoSaber() {
   const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState('study'); // study, library, wisdom
+  const [activeTab, setActiveTab] = useState('study'); 
   const [bookInput, setBookInput] = useState('');
   const [authorInput, setAuthorInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -226,13 +243,10 @@ export default function CantinhoDoSaber() {
   // --- Auth & Data ---
   useEffect(() => {
     if (firebaseError || !auth) return;
-
     const initAuth = async () => {
-      // Check for environment token first (Sandbox), then Sandbox Initial Token, then Anonymous
       if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
         await signInWithCustomToken(auth, __initial_auth_token);
       } else {
-        // Production fallback: Anonymous Auth (Must be enabled in Firebase Console)
         await signInAnonymously(auth).catch(err => console.error("Auth Error:", err));
       }
     };
@@ -243,22 +257,13 @@ export default function CantinhoDoSaber() {
 
   useEffect(() => {
     if (!user || !db) return;
-
-    // We use a safe way to reference collections that works in both environments if possible
-    // Note: In a real app, you might just use 'users' collection at root. 
-    // Here we preserve the path structure for compatibility.
-    
     try {
         const historyQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'books'), orderBy('createdAt', 'desc'));
-        const unsubHistory = onSnapshot(historyQuery, (s) => setHistory(s.docs.map(d => ({ id: d.id, ...d.data() }))), (e) => console.error("History fetch error:", e));
-
+        const unsubHistory = onSnapshot(historyQuery, (s) => setHistory(s.docs.map(d => ({ id: d.id, ...d.data() }))));
         const wisdomQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'master_text'), orderBy('createdAt', 'asc')); 
-        const unsubWisdom = onSnapshot(wisdomQuery, (s) => setMasterWisdom(s.docs.map(d => ({ id: d.id, ...d.data() }))), (e) => console.error("Wisdom fetch error:", e));
-
+        const unsubWisdom = onSnapshot(wisdomQuery, (s) => setMasterWisdom(s.docs.map(d => ({ id: d.id, ...d.data() }))));
         return () => { unsubHistory(); unsubWisdom(); };
-    } catch(e) {
-        console.error("Firestore Error. Check permissions or indexes.", e);
-    }
+    } catch(e) { console.error("Firestore Error", e); }
   }, [user]);
 
   // --- Logic ---
@@ -268,12 +273,10 @@ export default function CantinhoDoSaber() {
     setError('');
     
     try {
-      // Get API Key from Environment or Runtime
       let apiKey = "";
       if (typeof process !== 'undefined' && process.env) {
           apiKey = process.env.REACT_APP_GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || "";
       } 
-      // Fallback: If running in the specific sandbox tool that injects it empty
       if (!apiKey && typeof apiKey === 'undefined') apiKey = ""; 
 
       const userQuery = `Livro: ${bookInput}\nAutor: ${authorInput}`;
@@ -291,21 +294,13 @@ export default function CantinhoDoSaber() {
       );
 
       const data = await response.json();
-      
-      if (data.error) {
-          throw new Error(data.error.message || "Erro na API do Gemini.");
-      }
-
-      if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-          throw new Error("O oráculo ficou em silêncio. Tente novamente.");
-      }
+      if (data.error) throw new Error(data.error.message || "Erro na API.");
+      if (!data.candidates?.[0]?.content?.parts?.[0]?.text) throw new Error("Sem resposta.");
 
       const fullText = data.candidates[0].content.parts[0].text;
       const [analysisContent, wisdomContent] = fullText.split('|||TEXTO_MESTRE|||');
-
       const cleanWisdom = wisdomContent ? wisdomContent.trim() : "";
 
-      // Parallel Saves
       const saveBook = addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'books'), {
         title: bookInput,
         author: authorInput,
@@ -327,14 +322,12 @@ export default function CantinhoDoSaber() {
       setActiveTab('study');
       
     } catch (err) {
-      console.error(err);
-      setError("Falha na conexão. Verifique sua chave API do Gemini ou internet.");
+      setError("Falha na conexão.");
     } finally {
       setLoading(false);
     }
   };
 
-  // --- Modern UI Elements ---
   const NavButton = ({ id, label, icon: Icon }) => (
     <button 
       onClick={() => { setActiveTab(id); setMobileMenuOpen(false); }}
@@ -351,43 +344,41 @@ export default function CantinhoDoSaber() {
     </button>
   );
 
-  // If configuration fails completely, show help screen
   if (firebaseError) return <ConfigErrorScreen />;
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-slate-900 font-sans selection:bg-violet-200">
       
-      {/* Top Navigation Bar */}
-      <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-xl z-50 border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg shadow-violet-500/20">
-              <Brain size={24} />
+      {/* Navigation - Only visible when NOT reading */}
+      {!currentAnalysis && (
+        <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-xl z-50 border-b border-slate-100">
+          <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg shadow-violet-500/20">
+                <Brain size={24} />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold tracking-tight text-slate-900 leading-tight">
+                  Cantinho do Saber
+                </h1>
+                <p className="text-xs text-slate-500 uppercase tracking-widest font-medium">Christyan Victor</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight text-slate-900 leading-tight">
-                Cantinho do Saber
-              </h1>
-              <p className="text-xs text-slate-500 uppercase tracking-widest font-medium">Christyan Victor</p>
+
+            <div className="hidden md:flex items-center gap-2 bg-slate-50 p-1.5 rounded-full border border-slate-100">
+              <NavButton id="study" label="Imersão" icon={Sparkles} />
+              <NavButton id="library" label="Acervo" icon={Library} />
+              <NavButton id="wisdom" label="Legado" icon={Infinity} />
             </div>
+
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 text-slate-600">
+              {mobileMenuOpen ? <X /> : <Menu />}
+            </button>
           </div>
+        </nav>
+      )}
 
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-2 bg-slate-50 p-1.5 rounded-full border border-slate-100">
-            <NavButton id="study" label="Imersão" icon={Sparkles} />
-            <NavButton id="library" label="Acervo" icon={Library} />
-            <NavButton id="wisdom" label="Legado" icon={Infinity} />
-          </div>
-
-          {/* Mobile Menu Toggle */}
-          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 text-slate-600">
-            {mobileMenuOpen ? <X /> : <Menu />}
-          </button>
-        </div>
-      </nav>
-
-      {/* Mobile Menu Overlay */}
-      {mobileMenuOpen && (
+      {mobileMenuOpen && !currentAnalysis && (
         <div className="fixed inset-0 bg-white z-40 pt-24 px-6 md:hidden animate-in slide-in-from-top-10">
            <div className="flex flex-col gap-4">
             <NavButton id="study" label="Imersão" icon={Sparkles} />
@@ -397,24 +388,25 @@ export default function CantinhoDoSaber() {
         </div>
       )}
 
-      <main className="pt-28 pb-20 px-6 max-w-7xl mx-auto min-h-screen">
+      <main className={`${!currentAnalysis ? 'pt-28' : ''} pb-20 max-w-7xl mx-auto min-h-screen`}>
         
         {/* === TAB: STUDY === */}
         {activeTab === 'study' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="animate-in fade-in duration-700">
             
             {!currentAnalysis ? (
-              <div className="max-w-2xl mx-auto mt-10 md:mt-20 text-center">
+              // SEARCH / HOME VIEW
+              <div className="max-w-2xl mx-auto mt-10 md:mt-20 text-center px-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-50 text-violet-700 text-xs font-bold uppercase tracking-wider mb-6 border border-violet-100">
                   <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse"></span>
-                  Gemini Pro Activated
+                  Gemini Pro
                 </div>
                 
                 <h1 className="text-4xl md:text-6xl font-bold text-slate-900 mb-6 tracking-tight leading-tight">
                   O que vamos <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-indigo-600">devorar</span> hoje?
                 </h1>
                 <p className="text-lg text-slate-500 mb-12 max-w-lg mx-auto leading-relaxed">
-                  Transforme páginas em sabedoria líquida. O sistema está pronto para extrair a essência do seu próximo livro.
+                  Transforme páginas em sabedoria líquida.
                 </p>
 
                 <div className="bg-white p-2 rounded-2xl shadow-2xl shadow-slate-200/50 border border-slate-100 flex flex-col md:flex-row gap-2 transition-all focus-within:ring-2 focus-within:ring-violet-100 focus-within:border-violet-300">
@@ -451,44 +443,67 @@ export default function CantinhoDoSaber() {
                 )}
               </div>
             ) : (
-              <div className="max-w-4xl mx-auto">
-                <div className="flex justify-between items-center mb-8">
-                  <button onClick={() => setCurrentAnalysis(null)} className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors font-medium">
-                    <ArrowRight className="rotate-180" size={18} /> Novo Estudo
-                  </button>
-                  <span className="px-3 py-1 bg-green-50 text-green-700 text-xs font-bold rounded-full border border-green-100">
-                    Sincronizado com o Legado
-                  </span>
+              // KINDLE-STYLE READER VIEW
+              // Fixed inset-0 covers entire screen. z-50 ensures it is on top.
+              <div className="fixed inset-0 z-[60] bg-[#141411] overflow-y-auto animate-in fade-in duration-500 scrollbar-thin scrollbar-thumb-[#2A2A28] scrollbar-track-transparent">
+                
+                {/* Minimalist Reader Header */}
+                <div className="sticky top-0 bg-[#141411]/95 backdrop-blur-sm border-b border-[#2A2A28] px-4 md:px-8 py-4 flex justify-between items-center text-[#A8A29E] z-10 transition-opacity hover:opacity-100 opacity-0 md:opacity-100">
+                   <button onClick={() => setCurrentAnalysis(null)} className="flex items-center gap-2 hover:text-[#E7E5E4] transition-colors group">
+                      <div className="p-1 rounded-full group-hover:bg-[#2A2A28] transition-colors">
+                        <ArrowRight className="rotate-180" size={20} /> 
+                      </div>
+                      <span className="text-xs font-medium uppercase tracking-widest hidden md:inline">Sair do Modo Leitura</span>
+                   </button>
+                   <span className="text-xs font-serif italic text-[#57534E]">{currentAnalysis.title}</span>
                 </div>
+                
+                {/* Mobile Back Button (Always Visible) */}
+                <button onClick={() => setCurrentAnalysis(null)} className="md:hidden fixed top-4 left-4 z-20 p-2 bg-[#2A2A28]/50 backdrop-blur rounded-full text-[#E7E5E4]">
+                    <X size={20} />
+                </button>
 
-                <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
-                  <div className="bg-slate-900 p-10 md:p-16 text-white relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-violet-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 -mr-16 -mt-16"></div>
-                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 -ml-16 -mb-16"></div>
-                    
-                    <h2 className="text-3xl md:text-5xl font-bold mb-4 relative z-10">{currentAnalysis.title}</h2>
-                    <p className="text-xl text-slate-300 font-serif italic relative z-10">por {currentAnalysis.author}</p>
-                  </div>
-                  <div className="p-10 md:p-16">
-                    <MarkdownRenderer content={currentAnalysis.content} />
-                  </div>
+                {/* Reader Content Container */}
+                <div className="max-w-3xl mx-auto px-6 py-12 md:py-24">
+                   {/* Title Card */}
+                   <header className="mb-16 md:mb-24 text-center">
+                      <h1 className="text-4xl md:text-6xl font-serif font-bold text-[#E7E5E4] mb-6 leading-tight">
+                        {currentAnalysis.title}
+                      </h1>
+                      <div className="w-16 h-1 bg-[#2A2A28] mx-auto mb-6"></div>
+                      <p className="text-xl md:text-2xl text-[#A8A29E] font-serif italic">
+                        {currentAnalysis.author}
+                      </p>
+                   </header>
+
+                   {/* The Content */}
+                   <div className="pb-24">
+                      <MarkdownRenderer content={currentAnalysis.content} isDarkReader={true} />
+                   </div>
+                   
+                   {/* Footer Indicator */}
+                   <div className="mt-10 pt-10 border-t border-[#2A2A28] text-center text-[#44403C] text-xs uppercase tracking-widest flex items-center justify-center gap-2">
+                      <div className="w-1 h-1 rounded-full bg-[#44403C]"></div>
+                      Fim do Estudo
+                      <div className="w-1 h-1 rounded-full bg-[#44403C]"></div>
+                   </div>
                 </div>
               </div>
             )}
           </div>
         )}
 
-        {/* === TAB: LIBRARY === */}
+        {/* === TAB: LIBRARY (No Changes needed, retains Light Mode) === */}
         {activeTab === 'library' && (
-          <div className="max-w-6xl mx-auto animate-in slide-in-from-right duration-500">
+          <div className="max-w-6xl mx-auto animate-in slide-in-from-right duration-500 px-6">
             <div className="flex items-end justify-between mb-12">
               <div>
                 <h2 className="text-4xl font-bold text-slate-900 tracking-tight">Acervo Pessoal</h2>
-                <p className="text-slate-500 mt-2">Sua trajetória intelectual em cards.</p>
+                <p className="text-slate-500 mt-2">Sua trajetória intelectual.</p>
               </div>
               <div className="hidden md:block text-right">
                 <p className="text-4xl font-bold text-violet-600">{history.length}</p>
-                <p className="text-xs uppercase tracking-widest text-slate-400 font-bold">Livros Lidos</p>
+                <p className="text-xs uppercase tracking-widest text-slate-400 font-bold">Livros</p>
               </div>
             </div>
 
@@ -500,18 +515,16 @@ export default function CantinhoDoSaber() {
                   className="group bg-white rounded-2xl p-8 shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 border border-slate-100 transition-all duration-300 cursor-pointer flex flex-col justify-between h-[300px] relative overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-white transform -rotate-45 group-hover:rotate-0 transition-transform duration-500">
+                     <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-white transform -rotate-45 group-hover:rotate-0 transition-transform duration-500">
                       <ArrowRight size={18} />
                     </div>
                   </div>
-
                   <div>
                     <h3 className="text-2xl font-bold text-slate-900 mb-2 line-clamp-2 leading-tight group-hover:text-violet-700 transition-colors">
                       {book.title}
                     </h3>
                     <p className="text-slate-500 font-serif italic">{book.author}</p>
                   </div>
-
                   <div className="mt-auto pt-6 border-t border-slate-50 flex justify-between items-center">
                     <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">
                        {book.createdAt?.seconds ? new Date(book.createdAt.seconds * 1000).toLocaleDateString() : '—'}
@@ -524,16 +537,14 @@ export default function CantinhoDoSaber() {
           </div>
         )}
 
-        {/* === TAB: WISDOM (LEGADO) === */}
+        {/* === TAB: WISDOM === */}
         {activeTab === 'wisdom' && (
-          <div className="max-w-4xl mx-auto animate-in fade-in duration-1000">
+          <div className="max-w-4xl mx-auto animate-in fade-in duration-1000 px-6">
              <div className="bg-white rounded-none md:rounded-lg shadow-none md:shadow-2xl overflow-hidden min-h-[80vh] relative">
-                {/* Book Spine Effect */}
                 <div className="hidden md:block absolute left-0 top-0 bottom-0 w-2 bg-gradient-to-r from-slate-200 to-white z-20"></div>
                 <div className="hidden md:block absolute left-2 top-0 bottom-0 w-1 bg-slate-100 z-20"></div>
 
-                <div className="px-8 py-12 md:px-24 md:py-20 relative bg-[#FFFDF9]"> {/* Paper Color */}
-                   
+                <div className="px-8 py-12 md:px-24 md:py-20 relative bg-[#FFFDF9]">
                    <header className="mb-16 text-center">
                       <p className="text-xs font-bold text-violet-600 uppercase tracking-[0.3em] mb-4">O Texto Infinito</p>
                       <h2 className="text-4xl md:text-5xl font-serif font-bold text-slate-900 mb-6">Sabedoria Fluída</h2>
@@ -545,25 +556,21 @@ export default function CantinhoDoSaber() {
                         <div className="text-center py-20 opacity-50">
                            <Infinity className="w-16 h-16 mx-auto mb-4 text-slate-300" />
                            <p className="text-xl font-serif italic text-slate-400">
-                             O livro da sua vida ainda está em branco. Comece a estudar para escrever o primeiro capítulo.
+                             Comece a estudar para escrever o primeiro capítulo.
                            </p>
                         </div>
                       ) : (
                         masterWisdom.map((entry) => (
                           <div key={entry.id} className="mb-2">
-                             {/* The "Organic" integration is just text flowing without hard breaks */}
                              <MarkdownRenderer content={entry.wisdom} isMasterText={true} />
-                             {/* Subtle divider for context, visible on hover only maybe? keeping it invisible for organic feel */}
                              <div className="h-4 w-full"></div> 
                           </div>
                         ))
                       )}
-                      
                       <div className="mt-12 flex justify-center opacity-30">
                         <span className="text-3xl tracking-widest text-slate-400">***</span>
                       </div>
                    </div>
-
                 </div>
              </div>
           </div>

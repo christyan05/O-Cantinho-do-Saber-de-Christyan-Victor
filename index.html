@@ -11,7 +11,9 @@ import {
   Brain,
   Search,
   Menu,
-  X
+  X,
+  AlertTriangle,
+  Settings
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { 
@@ -33,12 +35,59 @@ import {
   getDoc
 } from 'firebase/firestore';
 
-// --- Firebase Configuration ---
-const firebaseConfig = JSON.parse(__firebase_config);
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+// --- Configuration & Initialization Strategy ---
+// This block allows the code to run both in the AI Preview Environment AND in Production (Vercel/Netlify)
+
+const getEnv = (key) => {
+  // Supports Vite (import.meta.env), Create React App (process.env), and direct process.env
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+        return import.meta.env[`VITE_${key}`] || import.meta.env[`REACT_APP_${key}`];
+    }
+    if (typeof process !== 'undefined' && process.env) {
+        return process.env[`REACT_APP_${key}`] || process.env[`VITE_${key}`] || process.env[key];
+    }
+  } catch (e) {
+    return undefined;
+  }
+  return undefined;
+};
+
+let app, auth, db, firebaseError;
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'cantinho-do-saber-app';
+
+try {
+  let config;
+  
+  // 1. Try AI Sandbox Config
+  if (typeof __firebase_config !== 'undefined') {
+    config = JSON.parse(__firebase_config);
+  } 
+  // 2. Try Standard Environment Variables (Vercel/GitHub)
+  else {
+    config = {
+      apiKey: getEnv('FIREBASE_API_KEY'),
+      authDomain: getEnv('FIREBASE_AUTH_DOMAIN'),
+      projectId: getEnv('FIREBASE_PROJECT_ID'),
+      storageBucket: getEnv('FIREBASE_STORAGE_BUCKET'),
+      messagingSenderId: getEnv('FIREBASE_MESSAGING_SENDER_ID'),
+      appId: getEnv('FIREBASE_APP_ID')
+    };
+  }
+
+  // Check if critical config is missing
+  if (!config.apiKey || !config.projectId) {
+    throw new Error("Missing Configuration");
+  }
+
+  app = initializeApp(config);
+  auth = getAuth(app);
+  db = getFirestore(app);
+
+} catch (err) {
+  console.warn("Firebase Initialization Error:", err);
+  firebaseError = true;
+}
 
 // --- System Prompt Constant ---
 const SYSTEM_PROMPT = `
@@ -90,6 +139,28 @@ Integre as maiores lições deste livro em uma narrativa filosófica e atemporal
 `;
 
 // --- Components ---
+
+const ConfigErrorScreen = () => (
+  <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+    <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-red-100 p-8 text-center">
+      <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+        <Settings className="text-red-500 w-8 h-8" />
+      </div>
+      <h2 className="text-2xl font-bold text-slate-900 mb-4">Configuração Necessária</h2>
+      <p className="text-slate-600 mb-6 text-sm leading-relaxed">
+        Para usar este app fora do ambiente de teste, você precisa configurar as variáveis de ambiente no seu provedor (Vercel, Netlify, etc).
+      </p>
+      <div className="bg-slate-900 rounded-lg p-4 text-left overflow-x-auto">
+        <code className="text-xs text-green-400 font-mono">
+          REACT_APP_FIREBASE_API_KEY=...<br/>
+          REACT_APP_FIREBASE_PROJECT_ID=...<br/>
+          REACT_APP_GEMINI_API_KEY=...
+        </code>
+      </div>
+      <p className="mt-6 text-xs text-slate-400">Verifique o console do navegador para mais detalhes.</p>
+    </div>
+  </div>
+);
 
 const MarkdownRenderer = ({ content, isMasterText = false }) => {
   if (!content) return null;
@@ -154,11 +225,15 @@ export default function CantinhoDoSaber() {
 
   // --- Auth & Data ---
   useEffect(() => {
+    if (firebaseError || !auth) return;
+
     const initAuth = async () => {
+      // Check for environment token first (Sandbox), then Sandbox Initial Token, then Anonymous
       if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
         await signInWithCustomToken(auth, __initial_auth_token);
       } else {
-        await signInAnonymously(auth);
+        // Production fallback: Anonymous Auth (Must be enabled in Firebase Console)
+        await signInAnonymously(auth).catch(err => console.error("Auth Error:", err));
       }
     };
     initAuth();
@@ -167,15 +242,23 @@ export default function CantinhoDoSaber() {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !db) return;
 
-    const historyQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'books'), orderBy('createdAt', 'desc'));
-    const unsubHistory = onSnapshot(historyQuery, (s) => setHistory(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+    // We use a safe way to reference collections that works in both environments if possible
+    // Note: In a real app, you might just use 'users' collection at root. 
+    // Here we preserve the path structure for compatibility.
+    
+    try {
+        const historyQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'books'), orderBy('createdAt', 'desc'));
+        const unsubHistory = onSnapshot(historyQuery, (s) => setHistory(s.docs.map(d => ({ id: d.id, ...d.data() }))), (e) => console.error("History fetch error:", e));
 
-    const wisdomQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'master_text'), orderBy('createdAt', 'asc')); // Chronological order for flow
-    const unsubWisdom = onSnapshot(wisdomQuery, (s) => setMasterWisdom(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+        const wisdomQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'master_text'), orderBy('createdAt', 'asc')); 
+        const unsubWisdom = onSnapshot(wisdomQuery, (s) => setMasterWisdom(s.docs.map(d => ({ id: d.id, ...d.data() }))), (e) => console.error("Wisdom fetch error:", e));
 
-    return () => { unsubHistory(); unsubWisdom(); };
+        return () => { unsubHistory(); unsubWisdom(); };
+    } catch(e) {
+        console.error("Firestore Error. Check permissions or indexes.", e);
+    }
   }, [user]);
 
   // --- Logic ---
@@ -185,7 +268,14 @@ export default function CantinhoDoSaber() {
     setError('');
     
     try {
-      const apiKey = ""; 
+      // Get API Key from Environment or Runtime
+      let apiKey = "";
+      if (typeof process !== 'undefined' && process.env) {
+          apiKey = process.env.REACT_APP_GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || "";
+      } 
+      // Fallback: If running in the specific sandbox tool that injects it empty
+      if (!apiKey && typeof apiKey === 'undefined') apiKey = ""; 
+
       const userQuery = `Livro: ${bookInput}\nAutor: ${authorInput}`;
       
       const response = await fetch(
@@ -201,7 +291,14 @@ export default function CantinhoDoSaber() {
       );
 
       const data = await response.json();
-      if (!data.candidates?.[0]?.content?.parts?.[0]?.text) throw new Error("Erro na síntese.");
+      
+      if (data.error) {
+          throw new Error(data.error.message || "Erro na API do Gemini.");
+      }
+
+      if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+          throw new Error("O oráculo ficou em silêncio. Tente novamente.");
+      }
 
       const fullText = data.candidates[0].content.parts[0].text;
       const [analysisContent, wisdomContent] = fullText.split('|||TEXTO_MESTRE|||');
@@ -230,7 +327,8 @@ export default function CantinhoDoSaber() {
       setActiveTab('study');
       
     } catch (err) {
-      setError("A conexão com o oráculo falhou. Tente novamente.");
+      console.error(err);
+      setError("Falha na conexão. Verifique sua chave API do Gemini ou internet.");
     } finally {
       setLoading(false);
     }
@@ -252,6 +350,9 @@ export default function CantinhoDoSaber() {
       )}
     </button>
   );
+
+  // If configuration fails completely, show help screen
+  if (firebaseError) return <ConfigErrorScreen />;
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-slate-900 font-sans selection:bg-violet-200">
@@ -343,7 +444,11 @@ export default function CantinhoDoSaber() {
                     {loading ? <Clock className="animate-spin" size={20} /> : <><ArrowRight size={20} /> Iniciar</>}
                   </button>
                 </div>
-                {error && <p className="mt-4 text-red-500 text-sm">{error}</p>}
+                {error && (
+                  <div className="mt-4 flex items-center justify-center gap-2 text-red-500 bg-red-50 p-3 rounded-lg text-sm">
+                    <AlertTriangle size={16} /> {error}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="max-w-4xl mx-auto">
